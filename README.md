@@ -1,6 +1,6 @@
 # mocopi-parser
 
-mocopi-parser is a parser library for streamed data from [mocopi](https://www.sony.net/Products/mocopi-dev/jp/).
+mocopi-parser is a parser library of streamed data from [mocopi](https://www.sony.net/Products/mocopi-dev/jp/).
 
 ## Example
 
