@@ -22,7 +22,7 @@ fn main() {
     loop {
         socket.recv_from(buff).unwrap();
 
-        let packet = Packet::parse(&buff).unwrap();
+        let packet = mocopi_parser::parse(&buff).unwrap();
         
         println!("{:?}", packet);
     }

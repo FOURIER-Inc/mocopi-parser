@@ -78,13 +78,19 @@ pub struct Position {
 }
 
 #[derive(Debug, PartialEq)]
-struct Data<'a> {
+pub struct Data<'a> {
     pub len: u32,
     pub name: String,
     pub data: &'a [u8],
     pub rem: &'a [u8],
 }
 
+pub enum SkeletonOrFrame {
+    Skeleton(SkeletonPacket),
+    Frame(FramePacket),
+}
+
+/// Parse the values.
 fn parse_value(data: &[u8]) -> Data {
     // lengthの長さは4bytesで固定
     let (data, length) = le_u32::<_, Error<_>>(data).unwrap() as (&[u8], u32);
@@ -252,17 +258,37 @@ fn parse_trans(data: &[u8]) -> (u32, Transform) {
     })
 }
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+/// Parse the streamed data from mocopi.
+///
+/// # Examples
+///
+/// ```
+/// use std::net::UdpSocket;
+///
+/// let socket = UdpSocket::bind("192.168.10.1").unwrap();
+/// let mut buf = [0; 1024];
+///
+/// loop {
+///     socket.recv_from(&mut buf).unwrap();
+///     let packet = mocopi_parser::parse(&mut buf);
+///     println!("{:?}", packet);
+/// }
+/// ```
+pub fn parse(data: &mut [u8]) -> SkeletonOrFrame {
+    let (len, head) = parse_head(data);
+    let mut remain = &data[((len + 8) as usize)..];
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    let (len, info) = parse_info(remain);
+    remain = &remain[((len + 8) as usize)..];
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    let name = parse_value(data).name;
+
+    if name == "skdf" {
+        let (_, skeleton) = parse_skeleton(remain);
+        SkeletonOrFrame::Skeleton(SkeletonPacket { head, info, skeleton })
+    }
+    else {
+        let (_, frame) = parse_frame(remain);
+        SkeletonOrFrame::Frame(FramePacket { head, info, frame })
     }
 }
