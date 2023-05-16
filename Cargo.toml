@@ -1,6 +1,6 @@
 [package]
 name = "mocopi_parser"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Ryuya Hirayama <ryuya.hirayama@fourier.jp>"]
 description = "A parser of streamed data from mocopi"
