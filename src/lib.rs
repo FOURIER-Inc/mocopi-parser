@@ -252,17 +252,16 @@ fn parse_bones(data: &[u8]) -> Result<(u32, Box<Vec<Bone>>), Box<dyn error::Erro
 fn parse_trans(data: &[u8]) -> Result<(u32, Transform), Box<dyn error::Error + '_>> {
     // tran
     let data = parse_value(data)?;
-    let len = data.len;
 
     // 28bytesのデータを4bytesごとに取り出す
     let mut values = [0.0; 7];
-    for i in 0..6usize {
-        let v = &data.data[i * 4..(i * 4 + 4)];
-        values[i] = f32::from_le_bytes(v.try_into()?);
+    for (i, v) in values.iter_mut().enumerate() {
+        let b = &data.data[i * 4..(i * 4 + 4)];
+        *v = f32::from_le_bytes(b.try_into()?);
     }
 
     Ok((
-        len,
+        data.len,
         Transform {
             rot: Rotation {
                 x: values[0],
@@ -286,13 +285,17 @@ fn parse_trans(data: &[u8]) -> Result<(u32, Transform), Box<dyn error::Error + '
 /// ```
 /// use std::net::UdpSocket;
 ///
-/// let socket = UdpSocket::bind("192.168.10.1").unwrap();
+/// let socket = UdpSocket::bind("192.168.10.1:12351").unwrap();
 /// let mut buf = [0; 1024];
 ///
 /// loop {
 ///     socket.recv_from(&mut buf).unwrap();
 ///     let packet = mocopi_parser::parse(&mut buf).unwrap();
-///     println!("{:?}", packet);
+///
+///     match packet {
+///         mocopi_parser::SkeletonOrFrame::Skeleton(skeleton) => { dbg!(skeleton); },
+///         mocopi_parser::SkeletonOrFrame::Frame(frame) => { dbg!(frame); },
+///     }
 /// }
 /// ```
 pub fn parse(data: &mut [u8]) -> Result<SkeletonOrFrame, Box<dyn error::Error + '_>> {
@@ -314,5 +317,58 @@ pub fn parse(data: &mut [u8]) -> Result<SkeletonOrFrame, Box<dyn error::Error + 
     } else {
         let (_, frame) = parse_frame(remain)?;
         Ok(SkeletonOrFrame::Frame(FramePacket { head, info, frame }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_value() {
+        let raw = [
+            0x04, 0x00, 0x00, 0x00,
+            0x62, 0x6e, 0x64, 0x74,
+            0x02, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x00, 0x00
+        ];
+
+        let data = parse_value(&raw).unwrap();
+
+        assert_eq!(data.len, 4);
+        assert_eq!(data.name, "bndt");
+        assert_eq!(data.data, [0x02, 0x00, 0x00, 0x00]);
+        assert_eq!(data.rem, [0x01, 0x00, 0x00, 0x00]);
+    }
+
+    #[test]
+    fn test_parse_trans() {
+        let raw = [
+            0x1c, 0x00, 0x00, 0x00,
+
+            0x74, 0x72, 0x61, 0x6e,
+
+            0x00, 0x00, 0x9c, 0xa2,
+            0x00, 0xc0, 0xfe, 0xa4,
+            0x00, 0x00, 0xd0, 0xa3,
+            0x00, 0x00, 0x80, 0x3f,
+
+            0x17, 0x56, 0x03, 0xbc,
+            0x7c, 0x48, 0xd0, 0xbd,
+            0x0c, 0xa8, 0x03, 0x3e,
+        ];
+
+        let (len, data) = parse_trans(&raw).unwrap();
+
+        assert_eq!(len, 28);
+
+        assert_eq!(data.rot.x, -4.22838847e-18);
+        assert_eq!(data.rot.y, -1.104802e-16);
+        assert_eq!(data.rot.z, -2.25514052e-17);
+        assert_eq!(data.rot.w, 1.0);
+
+        assert_eq!(data.pos.x, -0.008016131);
+        assert_eq!(data.pos.y, -0.101700753);
+        assert_eq!(data.pos.z, 0.128570735);
     }
 }
