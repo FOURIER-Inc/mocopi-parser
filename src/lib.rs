@@ -1,8 +1,8 @@
-use std::error;
 use nom::bytes::complete::take;
 use nom::error::Error;
 use nom::number::complete::le_u32;
 use serde::{Deserialize, Serialize};
+use std::error;
 
 pub type BoneId = u16;
 pub type TransVal = f32;
@@ -169,7 +169,14 @@ fn parse_frame(data: &[u8]) -> Result<(u32, Frame), Box<dyn error::Error + '_>> 
     // btrs
     let (_, bones) = parse_bone_trans(data.rem)?;
 
-    Ok((len, Frame { num, time, bones: *bones }))
+    Ok((
+        len,
+        Frame {
+            num,
+            time,
+            bones: *bones,
+        },
+    ))
 }
 
 fn parse_bone_trans(data: &[u8]) -> Result<(u32, Box<Vec<BoneTrans>>), Box<dyn error::Error + '_>> {
@@ -254,10 +261,22 @@ fn parse_trans(data: &[u8]) -> Result<(u32, Transform), Box<dyn error::Error + '
         values[i] = f32::from_le_bytes(v.try_into()?);
     }
 
-    Ok((len, Transform {
-        rot: Rotation { x: values[0], y: values[1], z: values[2], w: values[3] },
-        pos: Position { x: values[4], y: values[5], z: values[6] },
-    }))
+    Ok((
+        len,
+        Transform {
+            rot: Rotation {
+                x: values[0],
+                y: values[1],
+                z: values[2],
+                w: values[3],
+            },
+            pos: Position {
+                x: values[4],
+                y: values[5],
+                z: values[6],
+            },
+        },
+    ))
 }
 
 /// Parse the streamed data from mocopi.
@@ -287,9 +306,12 @@ pub fn parse(data: &mut [u8]) -> Result<SkeletonOrFrame, Box<dyn error::Error + 
 
     if name == "skdf" {
         let (_, skeleton) = parse_skeleton(remain)?;
-        Ok(SkeletonOrFrame::Skeleton(SkeletonPacket { head, info, skeleton }))
-    }
-    else {
+        Ok(SkeletonOrFrame::Skeleton(SkeletonPacket {
+            head,
+            info,
+            skeleton,
+        }))
+    } else {
         let (_, frame) = parse_frame(remain)?;
         Ok(SkeletonOrFrame::Frame(FramePacket { head, info, frame }))
     }
