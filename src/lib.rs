@@ -2,68 +2,69 @@ use std::error;
 use nom::bytes::complete::take;
 use nom::error::Error;
 use nom::number::complete::le_u32;
+use serde::{Deserialize, Serialize};
 
 pub type BoneId = u16;
 pub type TransVal = f32;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct SkeletonPacket {
     pub head: Head,
     pub info: Info,
     pub skeleton: Skeleton,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Head {
     pub format: String,
     pub ver: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Info {
     pub addr: u64,
     pub port: u16,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Skeleton {
     pub bones: Vec<Bone>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Bone {
     pub id: BoneId,
     pub parent: BoneId,
     pub trans: Transform,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FramePacket {
     pub head: Head,
     pub info: Info,
     pub frame: Frame,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Frame {
     pub num: u32,
     pub time: u32,
     pub bones: Vec<BoneTrans>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct BoneTrans {
     pub id: BoneId,
     pub trans: Transform,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Transform {
     pub rot: Rotation,
     pub pos: Position,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Rotation {
     pub x: TransVal,
     pub y: TransVal,
@@ -71,14 +72,14 @@ pub struct Rotation {
     pub w: TransVal,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Position {
     pub x: TransVal,
     pub y: TransVal,
     pub z: TransVal,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Data<'a> {
     pub len: u32,
     pub name: String,
